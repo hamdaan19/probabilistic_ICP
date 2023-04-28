@@ -16,12 +16,12 @@ include_directories(
 link_directories(${PCL_LIBRARY_DIRS})
 
 add_executable(
-    scan_matching_2d
-    src/scan_matching_2d.cpp
+    transform
+    src/transform_cloud.cpp
 )
 
 target_link_libraries(
-    scan_matching_2d
+    transform
     ${EIGEN3_LIBS}
     ${PCL_LIBRARIES}
 )
