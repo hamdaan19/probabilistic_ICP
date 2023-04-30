@@ -25,3 +25,14 @@ target_link_libraries(
     ${EIGEN3_LIBS}
     ${PCL_LIBRARIES}
 )
+
+add_executable(
+    scan_matching_2d
+    src/scan_matching_2d.cpp
+)
+
+target_link_libraries(
+    scan_matching_2d
+    ${EIGEN3_LIBS}
+    ${PCL_LIBRARIES}
+)
