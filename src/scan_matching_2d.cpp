@@ -35,14 +35,15 @@ std::vector<Eigen::Vector<double,2>> toMeasurements(pcl::PointCloud<pcl::PointXY
     the form (range, bearing) to simulate measurement data. 
     */
    std::vector<Eigen::Vector<double,2>> out; 
-    for (const auto& p : cld) { 
+    for (const auto& p : *cld) { 
         double range = std::sqrt(pow(p.x,2) + pow(p.y,2));
         double theta = std::atan2(p.y, p.x); 
-        Eigen::Vector<double,2> v << range, theta; 
+        Eigen::Vector<double,2> v;
+        v << range, theta; 
         out.push_back(v); 
     }
 
-    return v; 
+    return out; 
 }
 
 int main(int argc, char* argv[]){
@@ -85,4 +86,56 @@ int main(int argc, char* argv[]){
     const auto z_arr = toMeasurements(scan_2); 
 
     
+}
+
+Eigen::Matrix<double,2,3> obs_jacobian(Eigen::Vector2d& m, Eigen::Vector3d& x, Eigen::Vector3d& prev_x){
+    auto dx = prev_x - x; 
+
+    Eigen::Matrix2d dR; // relative rotation
+    dR << 
+    cos(dx(2)), -sin(dx(2)),
+    sin(dx(2)), cos(dx(2));
+
+    Eigen::Vector2d dt; // relative translation
+    dt << dx(0), dx(1); 
+
+    Eigen::Matrix3d dT = Eigen::Matrix3d::Identity(); // relative transformation
+    dT.block(0,0,2,2) = dR; 
+    dT.block(0,2,2,1) = dt; 
+
+    Eigen::Vector3d m_homo;
+    m_homo << m(0), m(1), 1.0; // previous scan corresponding point in homogeneous coordinates
+
+    auto m_cap_homo = dT*m_homo; 
+
+    // Finding partial differentials for computing Jacobian
+
+    double dow_m_cap_x_by_dow_x = -1.0; 
+    double dow_m_cap_x_by_dow_y = 0; 
+    double dow_m_cap_x_by_dow_theta = -1.0 * ( m_homo(0)*sin( m_homo(2) ) + m_homo(1)*cos( m_homo(2) ) ); 
+
+    double dow_m_cap_y_by_dow_x = 0.0;
+    double dow_m_cap_y_by_dow_y = -1.0;
+    double dow_m_cap_y_by_dow_theta = m_homo(0)*cos( m_homo(2) ) - m_homo(1)*sin( m_homo(2) ); 
+
+    double dow_h1_by_dow_m_cap_x = m_cap_homo(0) * pow(pow(m_cap_homo(0),2) + pow(m_cap_homo(1),2), -0.5); 
+    double dow_h1_by_dow_m_cap_y = m_cap_homo(1) * pow(pow(m_cap_homo(0),2) + pow(m_cap_homo(1),2), -0.5); 
+
+    double dow_h2_by_dow_m_cap_x = -m_cap_homo(1) / (pow(m_cap_homo(0),2) + pow(m_cap_homo(1),2)); 
+    double dow_h2_by_dow_m_cap_y = m_cap_homo(0) / (pow(m_cap_homo(0),2) + pow(m_cap_homo(1),2)); 
+
+    double dow_h1_by_dow_x = dow_h1_by_dow_m_cap_x * dow_m_cap_x_by_dow_x; // J(0,0)
+    double dow_h1_by_dow_y = dow_h1_by_dow_m_cap_y * dow_m_cap_y_by_dow_y; // J(0,1)
+    double dow_h1_by_dow_theta = dow_h1_by_dow_m_cap_x * dow_m_cap_x_by_dow_theta + dow_h1_by_dow_m_cap_y * dow_m_cap_y_by_dow_theta; // J(0,2)
+
+    double dow_h2_by_dow_x = dow_h2_by_dow_m_cap_x * dow_m_cap_x_by_dow_x; // J(1,0)
+    double dow_h2_by_dow_y = dow_h2_by_dow_m_cap_y * dow_m_cap_y_by_dow_y; // J(1,1)
+    double dow_h2_by_dow_theta = dow_h2_by_dow_m_cap_x * dow_m_cap_x_by_dow_theta + dow_h2_by_dow_m_cap_y * dow_m_cap_y_by_dow_theta; // J(2,2)
+
+    Eigen::Matrix<double,2,3> H; // Jacobian
+    H  << 
+    dow_h1_by_dow_x, dow_h1_by_dow_y, dow_h1_by_dow_theta,
+    dow_h2_by_dow_x, dow_h2_by_dow_y, dow_h2_by_dow_theta; 
+
+    return H; 
 }
