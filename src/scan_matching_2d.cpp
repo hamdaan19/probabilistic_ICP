@@ -10,6 +10,8 @@
 #include <pcl/point_types.h>
 #include <pcl/common/transforms.h>
 
+Eigen::Matrix<double,2,3> obs_jacobian(Eigen::Vector2d& m, Eigen::Vector3d& x, Eigen::Vector3d& prev_x); 
+
 struct Correspondences {
     std::vector<unsigned> c_idx_1; 
     std::vector<unsigned> c_idx_2; 
@@ -24,7 +26,7 @@ Correspondences getCorrespondences(int size){
     std::iota(scan_1_cor_idx.begin(), scan_1_cor_idx.end(), 0);
     std::iota(scan_1_cor_idx.begin(), scan_1_cor_idx.end(), 0);
 
-    return Correspondences(scan_1_idx, scan_2_idx); 
+    return Correspondences(scan_1_cor_idx, scan_2_cor_idx); 
 }
 
 std::vector<Eigen::Vector<double,2>> toMeasurements(pcl::PointCloud<pcl::PointXY>::Ptr cld){
@@ -138,4 +140,33 @@ Eigen::Matrix<double,2,3> obs_jacobian(Eigen::Vector2d& m, Eigen::Vector3d& x, E
     dow_h2_by_dow_x, dow_h2_by_dow_y, dow_h2_by_dow_theta; 
 
     return H; 
+}
+
+Eigen::Vector<double,2> obs_model(Eigen::VectorXd& m, Eigen::VectorXd& x, Eigen::VectorXd& prev_x) {
+    auto dx = prev_x - x; 
+
+    Eigen::Matrix2d dR; // relative rotation
+    dR << 
+    cos(dx(2)), -sin(dx(2)),
+    sin(dx(2)), cos(dx(2));
+
+    Eigen::Vector2d dt; // relative translation
+    dt << dx(0), dx(1); 
+
+    Eigen::Matrix3d dT = Eigen::Matrix3d::Identity(); // relative transformation
+    dT.block(0,0,2,2) = dR; 
+    dT.block(0,2,2,1) = dt; 
+
+    Eigen::Vector3d m_homo;
+    m_homo << m(0), m(1), 1.0; // previous scan corresponding point in homogeneous coordinates
+
+    auto m_cap_homo = dT*m_homo; 
+
+    double range = std::sqrt(pow(m_cap_homo(0),2) + pow(m_cap_homo(1),2)); 
+    double theta = atan2(m_cap_homo(1), m_cap_homo(0)); 
+
+    Eigen::VectorXd v(2); 
+    v << range, theta; 
+
+    return v; 
 }
