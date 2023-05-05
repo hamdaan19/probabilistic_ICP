@@ -15,7 +15,7 @@ Eigen::Matrix<double,2,3> obs_jacobian(Eigen::Vector2d& m, Eigen::Vector3d& x, E
 struct Correspondences {
     std::vector<unsigned> c_idx_1; 
     std::vector<unsigned> c_idx_2; 
-    Correspondences(std::vector<unsigned> &vec1, std::vector<unsigned> &vec2) : c_idx_1(vec1), c_idx_2(vec2) {}; 
+    Correspondences(std::vector<unsigned>& vec1, std::vector<unsigned>& vec2) : c_idx_1(vec1), c_idx_2(vec2) {}; 
 };
 
 Correspondences getCorrespondences(int size){
@@ -65,18 +65,18 @@ int main(int argc, char* argv[]){
 
     // State vector contains x, y, theta. 
     // Previous time step state uncertainty
-    Eigen::Matrix3d S_t0_post; 
-    S_t0_post << 
+    Eigen::Matrix3d S_t0; 
+    S_t0 << 
     100, 80, 50,
     80, 100, 50,
     50, 50, 25; 
 
-    auto S_t0_post_inv = S_t0_post.inverse();
+    auto S_t0_inv = S_t0.inverse();
 
     // Prior uncertainty of current (propagated) state
-    Eigen::Matrix3d S_t1_prior; 
-    Eigen::Matrix3d R_t; // Motion model uncertainty
-    R_t <<
+    Eigen::Matrix3d S_t1_; 
+    Eigen::Matrix3d Q; // Motion model uncertainty
+    Q <<
     59, 47, 23,
     47, 62, 31,
     23, 31, 14; 
