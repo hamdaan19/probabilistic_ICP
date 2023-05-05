@@ -87,10 +87,14 @@ int main(int argc, char* argv[]){
     // Converting points in scan_2 to measurement form: (range, bearing)
     const auto z_arr = toMeasurements(scan_2); 
 
+    for (int i = 0; i < z_arr.size(); i++){
+        std::cout << z_arr[i][0] << " " << z_arr[i][1]*180/M_PI << std::endl; 
+    }
+
     
 }
 
-Eigen::Matrix<double,2,3> obs_jacobian(Eigen::Vector2d& m, Eigen::Vector3d& x, Eigen::Vector3d& prev_x){
+Eigen::Matrix<double,2,3> obs_jacobian(Eigen::Vector2d m, Eigen::Vector3d x, Eigen::Vector3d prev_x){
     auto dx = prev_x - x; 
 
     Eigen::Matrix2d dR; // relative rotation
@@ -142,7 +146,7 @@ Eigen::Matrix<double,2,3> obs_jacobian(Eigen::Vector2d& m, Eigen::Vector3d& x, E
     return H; 
 }
 
-Eigen::Vector<double,2> obs_model(Eigen::VectorXd& m, Eigen::VectorXd& x, Eigen::VectorXd& prev_x) {
+Eigen::Vector2d obs_model(Eigen::VectorXd& m, Eigen::VectorXd& x, Eigen::VectorXd& prev_x) {
     auto dx = prev_x - x; 
 
     Eigen::Matrix2d dR; // relative rotation
