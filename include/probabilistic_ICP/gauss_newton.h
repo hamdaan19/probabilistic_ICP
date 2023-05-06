@@ -9,12 +9,12 @@ namespace optim {
         public: 
             GaussNewton(
                 std::vector<Eigen::VectorXd> z, // Measurement Vector
-                std::vector<Eigen::VectorXd> m, // Previous scan points
+                std::vector<Eigen::VectorXd> p_w, // Previous scan points
                 // Ptr to function
                 // Arg list: 2D point in previous scan, state 
-                Eigen::VectorXd(*obs_model)(Eigen::VectorXd&, Eigen::VectorXd&, Eigen::VectorXd&),
+                Eigen::VectorXd(*obs_model)(Eigen::VectorXd&, Eigen::VectorXd&),
                 // Arg list: 2D point in previous scan, current state, previous state
-                Eigen::Matrix<double,-1,-1>(*get_obs_jacobi)(Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd),
+                Eigen::Matrix<double,-1,-1>(*get_obs_jacobi)(Eigen::VectorXd, Eigen::VectorXd),
                 Eigen::MatrixXd Q, // observation model uncertainty
                 Eigen::VectorXd x_prev, // Previous time-step posterior state estimate 
                 Eigen::MatrixXd S_prev, // Previoud time-step posterior state covariance 
@@ -22,10 +22,10 @@ namespace optim {
                 Eigen::MatrixXd S_pred // Next time-step prior (predicted) state covariance 
             );
 
-            Eigen::VectorXd(*observation_model)(Eigen::VectorXd&, Eigen::VectorXd&, Eigen::VectorXd&); 
-            Eigen::Matrix<double,-1,-1>(*get_obs_jacobian)(Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd); 
+            Eigen::VectorXd(*observation_model)(Eigen::VectorXd&, Eigen::VectorXd&); 
+            Eigen::Matrix<double,-1,-1>(*get_obs_jacobian)(Eigen::VectorXd, Eigen::VectorXd); 
             std::vector<Eigen::VectorXd> z_arr; 
-            std::vector<Eigen::VectorXd> m_arr;
+            std::vector<Eigen::VectorXd> p_w_arr;
             Eigen::MatrixXd Q; 
 
             Eigen::VectorXd x_t0; 

@@ -94,49 +94,43 @@ int main(int argc, char* argv[]){
     
 }
 
-Eigen::Matrix<double,2,3> obs_jacobian(Eigen::Vector2d m, Eigen::Vector3d x, Eigen::Vector3d prev_x){
-    auto dx = prev_x - x; 
+Eigen::Matrix<double,2,3> obs_jacobian(Eigen::Vector2d p_w, Eigen::Vector3d x){
 
-    Eigen::Matrix2d dR; // relative rotation
-    dR << 
-    cos(dx(2)), -sin(dx(2)),
-    sin(dx(2)), cos(dx(2));
+    Eigen::Matrix2d R_w_b; // rotation which transforms a point from body to world
+    R_w_b << 
+    cos(x(2)), -sin(x(2)),
+    sin(x(2)), cos(x(2));
 
-    Eigen::Vector2d dt; // relative translation
-    dt << dx(0), dx(1); 
+    Eigen::Vector2d t_w_b; // translation
+    t_w_b << x(0), x(1); 
 
-    Eigen::Matrix3d dT = Eigen::Matrix3d::Identity(); // relative transformation
-    dT.block(0,0,2,2) = dR; 
-    dT.block(0,2,2,1) = dt; 
-
-    Eigen::Vector3d m_homo;
-    m_homo << m(0), m(1), 1.0; // previous scan corresponding point in homogeneous coordinates
-
-    auto m_cap_homo = dT*m_homo; 
+    Eigen::Vector2d p_b = R_w_b.transpose()*(p_w - t_w_b); 
 
     // Finding partial differentials for computing Jacobian
 
-    double dow_m_cap_x_by_dow_x = -1.0; 
-    double dow_m_cap_x_by_dow_y = 0; 
-    double dow_m_cap_x_by_dow_theta = -1.0 * ( m_homo(0)*sin( m_homo(2) ) + m_homo(1)*cos( m_homo(2) ) ); 
+    double theta = x(2); 
 
-    double dow_m_cap_y_by_dow_x = 0.0;
-    double dow_m_cap_y_by_dow_y = -1.0;
-    double dow_m_cap_y_by_dow_theta = m_homo(0)*cos( m_homo(2) ) - m_homo(1)*sin( m_homo(2) ); 
+    double dow_p_bx_by_dow_x = -cos(theta); 
+    double dow_p_bx_by_dow_y = -sin(theta); 
+    double dow_p_bx_by_dow_theta = (p_w[0]-x(0))*sin(theta) - (p_w(1)-x(1))*cos(theta); 
 
-    double dow_h1_by_dow_m_cap_x = m_cap_homo(0) * pow(pow(m_cap_homo(0),2) + pow(m_cap_homo(1),2), -0.5); 
-    double dow_h1_by_dow_m_cap_y = m_cap_homo(1) * pow(pow(m_cap_homo(0),2) + pow(m_cap_homo(1),2), -0.5); 
+    double dow_p_by_by_dow_x = sin(theta); 
+    double dow_p_by_by_dow_y = -cos(theta);
+    double dow_p_by_by_dow_theta = (p_w[0]-x(0))*cos(theta) + (p_w(1)-x(1))*sin(theta); 
 
-    double dow_h2_by_dow_m_cap_x = -m_cap_homo(1) / (pow(m_cap_homo(0),2) + pow(m_cap_homo(1),2)); 
-    double dow_h2_by_dow_m_cap_y = m_cap_homo(0) / (pow(m_cap_homo(0),2) + pow(m_cap_homo(1),2)); 
+    double dow_h1_by_dow_p_bx = p_b(0) * pow(pow(p_b(0),2) + pow(p_b(1),2), -0.5); 
+    double dow_h1_by_dow_p_by = p_b(1) * pow(pow(p_b(0),2) + pow(p_b(1),2), -0.5); 
 
-    double dow_h1_by_dow_x = dow_h1_by_dow_m_cap_x * dow_m_cap_x_by_dow_x; // J(0,0)
-    double dow_h1_by_dow_y = dow_h1_by_dow_m_cap_y * dow_m_cap_y_by_dow_y; // J(0,1)
-    double dow_h1_by_dow_theta = dow_h1_by_dow_m_cap_x * dow_m_cap_x_by_dow_theta + dow_h1_by_dow_m_cap_y * dow_m_cap_y_by_dow_theta; // J(0,2)
+    double dow_h2_by_dow_p_bx = -p_b(1) / (pow(p_b(0),2) + pow(p_b(1),2)); 
+    double dow_h2_by_dow_p_by = p_b(0) / (pow(p_b(0),2) + pow(p_b(1),2)); 
 
-    double dow_h2_by_dow_x = dow_h2_by_dow_m_cap_x * dow_m_cap_x_by_dow_x; // J(1,0)
-    double dow_h2_by_dow_y = dow_h2_by_dow_m_cap_y * dow_m_cap_y_by_dow_y; // J(1,1)
-    double dow_h2_by_dow_theta = dow_h2_by_dow_m_cap_x * dow_m_cap_x_by_dow_theta + dow_h2_by_dow_m_cap_y * dow_m_cap_y_by_dow_theta; // J(2,2)
+    double dow_h1_by_dow_x = dow_h1_by_dow_p_bx*dow_p_bx_by_dow_x + dow_h1_by_dow_p_by*dow_p_by_by_dow_x; // J(0,0)
+    double dow_h1_by_dow_y = dow_h1_by_dow_p_bx*dow_p_bx_by_dow_y + dow_h1_by_dow_p_by*dow_p_by_by_dow_y; // J(0,1)
+    double dow_h1_by_dow_theta = dow_h1_by_dow_p_bx*dow_p_bx_by_dow_theta + dow_h1_by_dow_p_by*dow_p_by_by_dow_theta; // J(0,2)
+
+    double dow_h2_by_dow_x = dow_h2_by_dow_p_bx*dow_p_bx_by_dow_x + dow_h2_by_dow_p_by*dow_p_by_by_dow_x; // J(1,0)
+    double dow_h2_by_dow_y = dow_h2_by_dow_p_bx*dow_p_bx_by_dow_y + dow_h2_by_dow_p_by*dow_p_by_by_dow_y; // J(1,1)
+    double dow_h2_by_dow_theta = dow_h2_by_dow_p_bx*dow_p_bx_by_dow_theta + dow_h2_by_dow_p_by*dow_p_by_by_dow_theta; // J(2,2)
 
     Eigen::Matrix<double,2,3> H; // Jacobian
     H  << 
@@ -146,28 +140,20 @@ Eigen::Matrix<double,2,3> obs_jacobian(Eigen::Vector2d m, Eigen::Vector3d x, Eig
     return H; 
 }
 
-Eigen::Vector2d obs_model(Eigen::VectorXd& m, Eigen::VectorXd& x, Eigen::VectorXd& prev_x) {
-    auto dx = prev_x - x; 
+Eigen::Vector2d obs_model(Eigen::Vector2d p_w, Eigen::Vector3d x) {
 
-    Eigen::Matrix2d dR; // relative rotation
-    dR << 
-    cos(dx(2)), -sin(dx(2)),
-    sin(dx(2)), cos(dx(2));
+    Eigen::Matrix2d R_w_b; // rotation which transforms a point from body to world
+    R_w_b << 
+    cos(x(2)), -sin(x(2)),
+    sin(x(2)), cos(x(2));
 
-    Eigen::Vector2d dt; // relative translation
-    dt << dx(0), dx(1); 
+    Eigen::Vector2d t_w_b; // translation
+    t_w_b << x(0), x(1); 
 
-    Eigen::Matrix3d dT = Eigen::Matrix3d::Identity(); // relative transformation
-    dT.block(0,0,2,2) = dR; 
-    dT.block(0,2,2,1) = dt; 
+    Eigen::Vector2d p_b = R_w_b.transpose()*(p_w - t_w_b); 
 
-    Eigen::Vector3d m_homo;
-    m_homo << m(0), m(1), 1.0; // previous scan corresponding point in homogeneous coordinates
-
-    auto m_cap_homo = dT*m_homo; 
-
-    double range = std::sqrt(pow(m_cap_homo(0),2) + pow(m_cap_homo(1),2)); 
-    double theta = atan2(m_cap_homo(1), m_cap_homo(0)); 
+    double range = std::sqrt(pow(p_b(0),2) + pow(p_b(1),2)); 
+    double theta = atan2(p_b(1), p_b(0)); 
 
     Eigen::VectorXd v(2); 
     v << range, theta; 
