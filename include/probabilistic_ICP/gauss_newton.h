@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 
+
 namespace optim {
 
     class GaussNewton {
@@ -10,13 +11,14 @@ namespace optim {
             GaussNewton(
                 std::vector<Eigen::VectorXd> z, // Measurement Vector
                 std::vector<Eigen::VectorXd> p_w, // Previous scan points
+                // Elements in c are indices of first and second scans 'respectively'. 
+                std::vector<std::vector<unsigned>> c, // Correspondences
                 // Ptr to function
                 // Arg list: 2D point in previous scan, state 
                 Eigen::VectorXd(*obs_model)(Eigen::VectorXd&, Eigen::VectorXd&),
                 // Arg list: 2D point in previous scan, current state, previous state
                 Eigen::Matrix<double,-1,-1>(*get_obs_jacobi)(Eigen::VectorXd, Eigen::VectorXd),
                 Eigen::MatrixXd Q, // observation model uncertainty
-                Eigen::VectorXd x_prev, // Previous time-step posterior state estimate 
                 Eigen::MatrixXd S_prev, // Previoud time-step posterior state covariance 
                 Eigen::VectorXd x_pred, // Next time-step prior (predicted) state
                 Eigen::MatrixXd S_pred // Next time-step prior (predicted) state covariance 
@@ -24,11 +26,11 @@ namespace optim {
 
             Eigen::VectorXd(*observation_model)(Eigen::VectorXd&, Eigen::VectorXd&); 
             Eigen::Matrix<double,-1,-1>(*get_obs_jacobian)(Eigen::VectorXd, Eigen::VectorXd); 
+            std::vector<std::vector<unsigned>> c_arr; 
             std::vector<Eigen::VectorXd> z_arr; 
             std::vector<Eigen::VectorXd> p_w_arr;
             Eigen::MatrixXd Q; 
 
-            Eigen::VectorXd x_t0; 
             Eigen::MatrixXd S_t0;
             Eigen::VectorXd x_t1_; 
             Eigen::MatrixXd S_t1_; 
