@@ -32,23 +32,23 @@ std::vector<Eigen::Vector<double,-1>> toMeasurements(pcl::PointCloud<pcl::PointX
     return out; 
 }
 
-Eigen::MatrixXd generateCovarianceMatrix(Eigen::VectorXd mean, Eigen::VectorXd std){
-    int samples = 10; 
+Eigen::MatrixXd generateCovarianceMatrix(Eigen::VectorXd std){
+    int samples = 100; 
 
-    Eigen::MatrixXd C = Eigen::MatrixXd::Zero(mean.rows(), mean.rows()); 
+    Eigen::MatrixXd C = Eigen::MatrixXd::Zero(std.rows(), std.rows()); 
 
     for (int n = 0; n < samples; n++){
 
-        Eigen::VectorXd x_i(3); 
-        for (int i = 0; i < mean.rows(); i++){
+        Eigen::VectorXd x_i(std.rows()); 
+        for (int i = 0; i < std.rows(); i++){
             // r is a random floating point number between 0.0 and 1.0, inclusive
             double r = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
-            double x = (mean[i]-std[i]) + (r * 2*std[i]); 
+            double x = -std[i] + (r * 2*std[i]); 
             x_i[i] = x; 
         } 
 
         // error matrix
-        Eigen::MatrixXd E = (x_i - mean) * (x_i - mean).transpose(); 
+        Eigen::MatrixXd E = (x_i) * (x_i).transpose(); 
 
         C = C+E; 
     }

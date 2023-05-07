@@ -14,6 +14,6 @@
 
 std::vector<std::vector<unsigned>> getCorrespondences(int size);
 std::vector<Eigen::Vector<double,-1>> toMeasurements(pcl::PointCloud<pcl::PointXY>::Ptr cld);
-Eigen::MatrixXd generateCovarianceMatrix(Eigen::VectorXd mean, Eigen::VectorXd std); 
+Eigen::MatrixXd generateCovarianceMatrix(Eigen::VectorXd std); 
 
 #endif
