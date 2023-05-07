@@ -30,6 +30,7 @@ add_executable(
     scan_matching_2d
     src/scan_matching_2d.cpp
     src/gauss_newton.cpp
+    src/toydata.cpp
 )
 
 target_link_libraries(
