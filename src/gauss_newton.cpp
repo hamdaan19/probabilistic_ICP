@@ -23,9 +23,6 @@ optim::GaussNewton::GaussNewton(
 
 double optim::GaussNewton::objective_func(Eigen::VectorXd x) {
 
-    std::vector<unsigned> meas_idx(z_arr.size()); 
-    std::iota(meas_idx.begin(), meas_idx.end(), 0); 
-
     auto measurement_part = [this, &x](double prev, std::vector<unsigned> c_i) { // &this->z_arr, &m_arr, S_t0, Q, x, x_t
         unsigned int scan1idx = c_i[0]; // index of the corresponding point in scan 1
         unsigned int scan2idx = c_i[1]; // index of the corresponding measurement in scan 2
@@ -39,14 +36,35 @@ double optim::GaussNewton::objective_func(Eigen::VectorXd x) {
 
         double res = (z_i - z_pred).transpose() * S_z.inverse() * (z_i - z_pred); 
 
-        return res + prev; 
+        std::cout << res << " " << prev << std::endl; 
+
+        return res+prev; 
     };
 
-    double cost1 = std::accumulate(c_arr.begin(), c_arr.end(), 0, measurement_part); 
+    double cost1 = std::accumulate(c_arr.begin(), c_arr.end(), 0.0, measurement_part); 
 
     double cost2 = (x_t1_ - x).transpose() * S_t1_.inverse() * (x_t1_ - x); 
 
+    std::cout << "cost1: " << cost1 << " cost2: " << cost2 << std::endl; 
+
     return cost1 + cost2; 
+
+    // Eigen::VectorXd z_i = z_arr.at(77);
+    // Eigen::VectorXd p_w_i = p_w_arr.at(77);
+
+    // Eigen::VectorXd z_pred = observation_model(p_w_i, x); 
+
+    // for (int i = 0; i < p_w_arr.size(); i++){
+    //     std::cout << "Iter: " << i << std::endl; 
+    //     Eigen::MatrixXd H = get_obs_jacobian(p_w_arr.at(i), x);
+    //     std::cout << H << std::endl; 
+    //     std::cout << "------------------------------------------\n";  
+    // }
+
+    // Eigen::MatrixXd H = get_obs_jacobian(p_w_arr.at(150), x);
+    // std::cout << H << std::endl; 
+
+    // return 1.0;
 
 }
 

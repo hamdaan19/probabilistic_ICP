@@ -3,6 +3,8 @@
 
 #include <Eigen/Dense>
 
+#ifndef _GAUSS_NEWTON
+#define _GAUSS_NEWTON
 
 namespace optim {
 
@@ -41,3 +43,5 @@ namespace optim {
     }; 
 
 }
+
+#endif
