@@ -21,7 +21,7 @@ Eigen::VectorXd obs_model(Eigen::VectorXd& p_w, Eigen::VectorXd& x);
 
 int main(int argc, char* argv[]){
 
-    srand(time(0)); 
+    srand(0); 
 
     pcl::PointCloud<pcl::PointXY>::Ptr scan_1 (new pcl::PointCloud<pcl::PointXY>);
     pcl::PointCloud<pcl::PointXY>::Ptr scan_2 (new pcl::PointCloud<pcl::PointXY>);
@@ -38,30 +38,23 @@ int main(int argc, char* argv[]){
 
     // State vector contains x, y, theta. 
     // Previous time step state uncertainty
-    Eigen::Matrix3d S_t0; 
-    S_t0 << 
-    10, 5, 2*0.087,
-    5, 10, 3*0.087,
-    2*0.087, 3*0.087, 0.087*0.087; 
-
-    auto S_t0_inv = S_t0.inverse();
+    Eigen::Vector3d x_t0_std;
+    x_t0_std << 10.0, 10.0, 0.0523;  
+    Eigen::Matrix3d S_t0 = generateCovarianceMatrix(x_t0_std);  
 
     // Prior uncertainty of current (propagated) state
-    Eigen::Matrix3d S_t1_; 
-    S_t1_ <<
-    200, 180, 13.22*0.523,
-    180, 200, 13*0.523,
-    13.22*0.523, 13*0.523, 0.523*0.523;
+    Eigen::Vector3d x_pred_std; 
+    x_pred_std << 40.0, 40.0, 0.2618;
+    Eigen::Matrix3d S_pred = generateCovarianceMatrix(x_pred_std); 
 
-    Eigen::Matrix2d Q; // Motion model uncertainty
-    Q <<
-    59, 7*0.035,
-    7*0.035, 0.035*0.035;
+    // Measurement model uncertainty
+    Eigen::Vector2d z_std;
+    z_std << 2, 0.035; 
+    Eigen::Matrix2d Q = generateCovarianceMatrix(z_std); 
 
     // Predicted state
-    Eigen::Vector3d x_pred;
-    // x_pred << 1.5, 3.2, 0.22; // true values: 1.1, 3.4, 0.196 
-    x_pred << -1.9, -4.2, -M_PI_4/8; 
+    Eigen::Vector3d x_pred; // True: -1.1, -3.4, -0.0982
+    x_pred << -1.0, -3.5, -0.12; 
 
     // Point correspondences. Assuming known correspondences. 
     std::vector<std::vector<unsigned>> c = getCorrespondences(scan_1->size()); 
@@ -69,29 +62,35 @@ int main(int argc, char* argv[]){
     // Converting points in scan_2 to measurement form: (range, bearing)
     std::vector<Eigen::VectorXd> z_arr = toMeasurements(scan_2); 
 
-    // Manually casting pcl::PointCloud<pcl::PointXY>::Ptr to std::vector<Eigen::Vector2d> 
+    /*  Manually casting pcl::PointCloud<pcl::PointXY>::Ptr to std::vector<Eigen::Vector2d> */
     std::vector<Eigen::VectorXd> p_w_arr; 
     for (const auto& point : *scan_1){
         Eigen::VectorXd p_vec(2); 
         p_vec << point.x, point.y; 
         p_w_arr.push_back(p_vec); 
     }
+    /*--------------------------------------------------------------------------------------*/
 
     // Creating a GaussNewton object 
-    GaussNewton gn(z_arr, p_w_arr, c, obs_model, obs_jacobian, Q, S_t0, x_pred, S_t1_);
+    GaussNewton gn(z_arr, p_w_arr, c, obs_model, obs_jacobian, Q, S_t0, x_pred, S_pred);
 
-    // double val = gn.objective_func(x_pred);  
+    Eigen::Vector3d x; x << -1.0, -3.5, -0.12; // True: -1.1, -3.4, -0.0982
+    double val = gn.objective_func(x);  
 
-    // std::cout << "Val: " << val << std::endl; 
+    std::cout << "Val: " << val << std::endl; 
 
+    auto x_opt = gn.optimize(x_pred, 0.005); 
+    std::cout << x_opt << std::endl; 
 
-    Eigen::VectorXd std(3); 
-    std << 100, 90, 0.436; 
+    // Eigen::VectorXd std(3); 
+    // std << 100, 90, 0.436; 
 
-    auto covmat = generateCovarianceMatrix(x_pred, std); 
-    std::cout << "cov: \n" << covmat << std::endl; 
+    // Eigen::VectorXd x_pred_zero = Eigen::VectorXd::Zero(3); 
 
-    
+    // auto covmat = generateCovarianceMatrix(std); 
+
+    // std::cout << "cov: \n" << covmat << std::endl; 
+
 }
 
 Eigen::Matrix<double,-1,-1> obs_jacobian(Eigen::VectorXd p_w, Eigen::VectorXd x){

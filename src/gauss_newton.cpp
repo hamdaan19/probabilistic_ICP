@@ -36,8 +36,6 @@ double optim::GaussNewton::objective_func(Eigen::VectorXd x) {
 
         double res = (z_i - z_pred).transpose() * S_z.inverse() * (z_i - z_pred); 
 
-        std::cout << res << " " << prev << std::endl; 
-
         return res+prev; 
     };
 
@@ -49,23 +47,6 @@ double optim::GaussNewton::objective_func(Eigen::VectorXd x) {
 
     return cost1 + cost2; 
 
-    // Eigen::VectorXd z_i = z_arr.at(77);
-    // Eigen::VectorXd p_w_i = p_w_arr.at(77);
-
-    // Eigen::VectorXd z_pred = observation_model(p_w_i, x); 
-
-    // for (int i = 0; i < p_w_arr.size(); i++){
-    //     std::cout << "Iter: " << i << std::endl; 
-    //     Eigen::MatrixXd H = get_obs_jacobian(p_w_arr.at(i), x);
-    //     std::cout << H << std::endl; 
-    //     std::cout << "------------------------------------------\n";  
-    // }
-
-    // Eigen::MatrixXd H = get_obs_jacobian(p_w_arr.at(150), x);
-    // std::cout << H << std::endl; 
-
-    // return 1.0;
-
 }
 
 Eigen::VectorXd optim::GaussNewton::optimize(Eigen::Vector3d x_init, double step_length) {
@@ -73,21 +54,24 @@ Eigen::VectorXd optim::GaussNewton::optimize(Eigen::Vector3d x_init, double step
     // Non-linear function which is linearized
     auto func_F = [this](Eigen::VectorXd z_i, Eigen::VectorXd p_w_i, Eigen::VectorXd x){
         Eigen::VectorXd z_pred = observation_model(p_w_i, x);
-        return z_i - z_pred; 
+        Eigen::VectorXd f = z_i - z_pred; 
+        return f;
     };
 
     // Function to compute measurement-associated covariance
     auto func_S_z_inv = [this](Eigen::VectorXd p_w_i, Eigen::Vector3d x){
         Eigen::Matrix<double,-1,-1> H = get_obs_jacobian(p_w_i, x); 
         Eigen::MatrixXd S_z = H*S_t0*H.transpose() + Q;
-        return S_z.inverse(); 
+        Eigen::MatrixXd S_z_inv = S_z.inverse(); 
+        return S_z_inv; 
     };
 
     // Giving equal weightage to all correspondences
     double corres_weight = 1/z_arr.size(); 
 
-    auto x_k = x_init; 
-    while (true) { // some condition
+    Eigen::VectorXd x_k = x_init; 
+    int iter = 0; 
+    while (iter < 100) { // some condition
         
         Eigen::VectorXd del_x_resultant = Eigen::VectorXd::Zero( x_init.rows() ); 
         for (int i = 0; i < z_arr.size(); i++){
@@ -104,13 +88,17 @@ Eigen::VectorXd optim::GaussNewton::optimize(Eigen::Vector3d x_init, double step
             Eigen::MatrixXd S_z_i_inv = func_S_z_inv(p_w_i, x_k);
             Eigen::VectorXd F_i = func_F(z_i, p_w_i, x_k); 
 
-            Eigen::VectorXd del_x_i = corres_weight * ( ( H_i.transpose()*S_z_i_inv*H_i ).inverse() * H_i.transpose()*S_z_i_inv*F_i );
-
+            Eigen::MatrixXd I = Eigen::MatrixXd::Identity(x_init.rows(), x_init.rows()); 
+            Eigen::VectorXd del_x_i = ( ( H_i.transpose()*S_z_i_inv*H_i + 0.5*I).inverse() * H_i.transpose()*S_z_i_inv*F_i );
+            // std::cout << ( H_i.transpose()*S_z_i_inv*H_i ).inverse()  << std::endl; 
+            // std::cout << "-----------------\n";
             del_x_resultant += del_x_i;
 
         }
 
-        x_k = x_k + step_length * del_x_resultant; // Updating x per iteration
+        x_k = x_k + (step_length * del_x_resultant); // Updating x per iteration
+        std::cout << x_k.transpose() << std::endl; 
+        iter++;
     }
 
     return x_k; 
