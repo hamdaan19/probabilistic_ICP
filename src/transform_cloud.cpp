@@ -18,7 +18,7 @@ int main() {
         return -1; 
     }
 
-    float theta = M_PI_4/4; 
+    float theta = M_PI_4/8; 
 
     Eigen::Matrix4f T = Eigen::Matrix4f::Identity(); 
     T.block(0,0,3,3) = Eigen::AngleAxis(theta, Eigen::Vector3f::UnitZ()).toRotationMatrix(); 
@@ -26,6 +26,8 @@ int main() {
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZ>()); 
     pcl::transformPointCloud(*cloud, *transformed_cloud, T);
+
+    std::cout << "T:\n" << T << std::endl; 
 
     pcl::io::savePCDFileASCII ("/home/hamdaan/Dev/probabilistic_ICP/data/room_scan_2.pcd", *transformed_cloud);
 }
