@@ -82,7 +82,7 @@ int main(int argc, char* argv[]){
     // Creating a GaussNewton object 
     GaussNewton gn(z_arr, p_w_arr, c, obs_model, obs_jacobian, Q, S_t0, x_pred, S_pred);
 
-    // Eigen::Vector3d x; x << -0.00709614, -0.00527989,    -1.33514; // True: -1.1, -3.4, -0.0982
+    // Eigen::Vector3d x; x << -0.00709614, -0.00527989, -1.33514; 
     // double val = gn.objective_func(x);  
 
     // std::cout << "Val: " << val << std::endl; 
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]){
     //     std::cout << "Residual: " << (predicted_meas-z_arr[i]).norm() << "\n---------\n"; 
     // }
 
-    auto x_opt = gn.optimize(x_pred, 1.0); // Args: initial guess, step length
+    auto x_opt = gn.optimize(x_pred, 1.0, false); // Args: initial guess, step length, log_data
     std::cout << x_opt << std::endl; 
 
 }

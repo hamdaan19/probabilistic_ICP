@@ -1,5 +1,7 @@
 #include <probabilistic_ICP/gauss_newton.h>
 #include <cmath>
+#include <fstream>
+#include <string> 
 
 #include <numeric> 
 
@@ -51,7 +53,14 @@ double optim::GaussNewton::objective_func(Eigen::VectorXd x) {
 
 }
 
-Eigen::VectorXd optim::GaussNewton::optimize(Eigen::Vector3d x_init, double step_length) {
+Eigen::VectorXd optim::GaussNewton::optimize(Eigen::Vector3d x_init, double step_length, bool log_data) {
+
+    // Creating file output file stream for logging in optimizer data
+    std::ofstream file; 
+    std::string filename = "optimizer_logs.csv"; 
+    if (log_data) {
+        file.open(filename);
+    }
 
     // Non-linear function which is linearized
     auto func_F = [this](Eigen::VectorXd z_i, Eigen::VectorXd p_w_i, Eigen::VectorXd x){
@@ -82,6 +91,11 @@ Eigen::VectorXd optim::GaussNewton::optimize(Eigen::Vector3d x_init, double step
     Eigen::Matrix<double,3,1> x_prev; 
 
     while (iter < 1000) { // some condition
+
+        // Logging data into a csv file
+        if (log_data) {
+            file << iter << "," << x_k[0] << "," << x_k[1] << "," << x_k[2] << std::endl; 
+        }
         
         Eigen::VectorXd del_x_resultant = Eigen::VectorXd::Zero( x_init.rows() ); 
         for (int i = 0; i < z_arr.size(); i++){
@@ -128,6 +142,11 @@ Eigen::VectorXd optim::GaussNewton::optimize(Eigen::Vector3d x_init, double step
         std::cout << "x_opt: " << x_k.transpose() << std::endl; 
         iter++;
     } 
+
+    if (log_data){
+        file.close(); 
+        std::cout << "Optimizer data has been logged in " << filename << std::endl;  
+    }
 
     return x_k;
 
