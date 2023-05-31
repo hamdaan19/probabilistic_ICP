@@ -18,11 +18,12 @@ int main() {
         return -1; 
     }
 
-    float theta = M_PI_4/8; 
+    float theta = 0.0; // M_PI_4/8; 
+    std::cout << "Theta: " << theta << std::endl; 
 
     Eigen::Matrix4f T = Eigen::Matrix4f::Identity(); 
     T.block(0,0,3,3) = Eigen::AngleAxis(theta, Eigen::Vector3f::UnitZ()).toRotationMatrix(); 
-    T.block(0,3,3,1) = Eigen::Vector<float,3>(1.1, 3.4, 0); 
+    T.block(0,3,3,1) = Eigen::Matrix<float,3,1>(0, 0, 0); 
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZ>()); 
     pcl::transformPointCloud(*cloud, *transformed_cloud, T);

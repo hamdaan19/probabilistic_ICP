@@ -2,6 +2,7 @@
 #include <vector> 
 #include <cmath> 
 #include <string>
+#include <memory>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -10,10 +11,17 @@
 #include <pcl/point_types.h>
 #include <pcl/common/transforms.h>
 
-#include <probabilistic_ICP/gauss_newton.h>
-#include <probabilistic_ICP/toydata.h>
+#include "probabilistic_ICP/gauss_newton.h"
+#include "probabilistic_ICP/toydata.h"
+// #include "probabilistic_ICP/optim.h"
 
 using namespace optim; 
+
+// using ceres::AutoDiffCostFunction;
+// using ceres::CostFunction;
+// using ceres::Problem;
+// using ceres::Solve;
+// using ceres::Solver;
 
 Eigen::Matrix<double,-1,-1> obs_jacobian(Eigen::VectorXd p_w, Eigen::VectorXd x); 
 Eigen::VectorXd obs_model(Eigen::VectorXd& p_w, Eigen::VectorXd& x);
@@ -44,7 +52,7 @@ int main(int argc, char* argv[]){
 
     // Prior uncertainty of current (propagated) state
     Eigen::Vector3d x_pred_std; 
-    x_pred_std << 40.0, 40.0, 0.2618;
+    x_pred_std << 40.0, 40.0, 3.14;
     Eigen::Matrix3d S_pred = generateCovarianceMatrix(x_pred_std); 
 
     // Measurement model uncertainty
@@ -53,8 +61,8 @@ int main(int argc, char* argv[]){
     Eigen::Matrix2d Q = generateCovarianceMatrix(z_std); 
 
     // Predicted state
-    Eigen::Vector3d x_pred; // True: -1.1, -3.4, -0.0982
-    x_pred << -1.0, -3.5, -0.12; 
+    Eigen::Vector3d x_pred; // True: 0.0, -0.0, -0.0
+    x_pred << -20.2, -13.3, 0.3681748; 
 
     // Point correspondences. Assuming known correspondences. 
     std::vector<std::vector<unsigned>> c = getCorrespondences(scan_1->size()); 
@@ -74,22 +82,27 @@ int main(int argc, char* argv[]){
     // Creating a GaussNewton object 
     GaussNewton gn(z_arr, p_w_arr, c, obs_model, obs_jacobian, Q, S_t0, x_pred, S_pred);
 
-    Eigen::Vector3d x; x << -1.0, -3.5, -0.12; // True: -1.1, -3.4, -0.0982
-    double val = gn.objective_func(x);  
+    // Eigen::Vector3d x; x << -0.00709614, -0.00527989,    -1.33514; // True: -1.1, -3.4, -0.0982
+    // double val = gn.objective_func(x);  
 
-    std::cout << "Val: " << val << std::endl; 
+    // std::cout << "Val: " << val << std::endl; 
 
-    auto x_opt = gn.optimize(x_pred, 0.005); 
+    // Eigen::VectorXd x_(3); x_ << 0.0, 0.0, -0.0;
+
+    // // Checking observation function
+    // for (int i = 0; i < c.size(); i++){
+    //     auto corr = c[i];
+    //     int index_z = corr[0]; 
+    //     int index_m = corr[1]; 
+
+    //     Eigen::VectorXd predicted_meas = obs_model(p_w_arr[i], x_);
+    //     std::cout << predicted_meas.transpose() << std::endl;
+    //     std::cout << z_arr[i].transpose() << std::endl;
+    //     std::cout << "Residual: " << (predicted_meas-z_arr[i]).norm() << "\n---------\n"; 
+    // }
+
+    auto x_opt = gn.optimize(x_pred, 1.0); // Args: initial guess, step length
     std::cout << x_opt << std::endl; 
-
-    // Eigen::VectorXd std(3); 
-    // std << 100, 90, 0.436; 
-
-    // Eigen::VectorXd x_pred_zero = Eigen::VectorXd::Zero(3); 
-
-    // auto covmat = generateCovarianceMatrix(std); 
-
-    // std::cout << "cov: \n" << covmat << std::endl; 
 
 }
 

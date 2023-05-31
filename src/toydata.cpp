@@ -13,18 +13,18 @@ std::vector<std::vector<unsigned>> getCorrespondences(int size){
     return c; 
 }
 
-std::vector<Eigen::Vector<double,-1>> toMeasurements(pcl::PointCloud<pcl::PointXY>::Ptr cld){
+std::vector<Eigen::Matrix<double,-1,1>> toMeasurements(pcl::PointCloud<pcl::PointXY>::Ptr cld){
     /* 
     This function is used to convert points (x,y) to measurements (range, bearing). 
     Ideally, if you're using a 2D lidar, your measurements would be of the latter form. 
     Just for the sake of this experiment, we will converting a bunch of points (x,y) to 
     the form (range, bearing) to simulate measurement data. 
     */
-   std::vector<Eigen::Vector<double,-1>> out; 
+   std::vector<Eigen::Matrix<double,-1,1>> out; 
     for (const auto& p : *cld) { 
         double range = std::sqrt(pow(p.x,2) + pow(p.y,2));
         double theta = std::atan2(p.y, p.x); 
-        Eigen::Vector<double,-1> v(2);
+        Eigen::Matrix<double,-1,1> v(2);
         v << range, theta; 
         out.push_back(v); 
     }
@@ -54,6 +54,12 @@ Eigen::MatrixXd generateCovarianceMatrix(Eigen::VectorXd std){
     }
 
     C = 1/((double)samples-1) * C; 
+
+    // Keeping only diagonal elements of the covariance matrix
+    // Eigen::MatrixXd C_diag = Eigen::MatrixXd::Zero(C.rows(), C.rows());
+    // for(int i = 0; i < C.rows(); i++){
+    //     C_diag(i,i) = C(i,i); 
+    // }
 
     return C; 
 }

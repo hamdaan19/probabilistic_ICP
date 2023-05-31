@@ -23,7 +23,9 @@ optim::GaussNewton::GaussNewton(
 
 double optim::GaussNewton::objective_func(Eigen::VectorXd x) {
 
-    auto measurement_part = [this, &x](double prev, std::vector<unsigned> c_i) { // &this->z_arr, &m_arr, S_t0, Q, x, x_t
+    double corres_weight = 1/((double)z_arr.size()); 
+
+    auto measurement_part = [this, &x, corres_weight](double prev, std::vector<unsigned> c_i) { // &this->z_arr, &m_arr, S_t0, Q, x, x_t
         unsigned int scan1idx = c_i[0]; // index of the corresponding point in scan 1
         unsigned int scan2idx = c_i[1]; // index of the corresponding measurement in scan 2
 
@@ -34,7 +36,7 @@ double optim::GaussNewton::objective_func(Eigen::VectorXd x) {
         Eigen::MatrixXd S_z = H*S_t0*H.transpose() + Q;
         Eigen::VectorXd z_pred = observation_model(p_w_i, x);
 
-        double res = (z_i - z_pred).transpose() * S_z.inverse() * (z_i - z_pred); 
+        double res = corres_weight * (z_i - z_pred).transpose() * S_z.inverse() * (z_i - z_pred); 
 
         return res+prev; 
     };
@@ -43,9 +45,9 @@ double optim::GaussNewton::objective_func(Eigen::VectorXd x) {
 
     double cost2 = (x_t1_ - x).transpose() * S_t1_.inverse() * (x_t1_ - x); 
 
-    std::cout << "cost1: " << cost1 << " cost2: " << cost2 << std::endl; 
+    // std::cout << "cost1: " << cost1 << " cost2: " << cost2 << std::endl; 
 
-    return cost1 + cost2; 
+    return 0.5 * (cost1 + cost2);  
 
 }
 
@@ -67,11 +69,19 @@ Eigen::VectorXd optim::GaussNewton::optimize(Eigen::Vector3d x_init, double step
     };
 
     // Giving equal weightage to all correspondences
-    double corres_weight = 1/z_arr.size(); 
+    double corres_weight = 1/((double)z_arr.size()); 
+    std::cout << "CORRESS_WEIGHT: " << corres_weight << std::endl; 
 
     Eigen::VectorXd x_k = x_init; 
     int iter = 0; 
-    while (iter < 100) { // some condition
+
+    // Stopping Criterion
+    double eps = 1e-5; 
+    double prev_obj_val = objective_func(x_init);
+    double alpha = 0.1; 
+    Eigen::Matrix<double,3,1> x_prev; 
+
+    while (iter < 1000) { // some condition
         
         Eigen::VectorXd del_x_resultant = Eigen::VectorXd::Zero( x_init.rows() ); 
         for (int i = 0; i < z_arr.size(); i++){
@@ -89,18 +99,36 @@ Eigen::VectorXd optim::GaussNewton::optimize(Eigen::Vector3d x_init, double step
             Eigen::VectorXd F_i = func_F(z_i, p_w_i, x_k); 
 
             Eigen::MatrixXd I = Eigen::MatrixXd::Identity(x_init.rows(), x_init.rows()); 
-            Eigen::VectorXd del_x_i = ( ( H_i.transpose()*S_z_i_inv*H_i + 0.5*I).inverse() * H_i.transpose()*S_z_i_inv*F_i );
+            Eigen::VectorXd del_x_i = corres_weight * ( ( H_i.transpose()*S_z_i_inv*H_i + alpha*I).inverse() * H_i.transpose()*S_z_i_inv*F_i );
             // std::cout << ( H_i.transpose()*S_z_i_inv*H_i ).inverse()  << std::endl; 
             // std::cout << "-----------------\n";
             del_x_resultant += del_x_i;
 
         }
-
+        x_prev = x_k; 
         x_k = x_k + (step_length * del_x_resultant); // Updating x per iteration
-        std::cout << x_k.transpose() << std::endl; 
-        iter++;
-    }
+        // std::cout << x_k.transpose() << std::endl; 
+        double obj_val = objective_func(x_k);
 
-    return x_k; 
+        // Updating damping factor
+        if (obj_val > prev_obj_val){
+            alpha *= 1.1; 
+        } else {
+            alpha /= 1.1; 
+        }
+
+        if ( std::isnan(obj_val) | ( (obj_val < prev_obj_val) && (prev_obj_val-obj_val <= eps) )){
+            x_k = x_prev; 
+            break;
+        }
+
+        prev_obj_val = obj_val; // Updating previous objective function value
+
+        std::cout << "Iteration: " << iter << " Obj func: " << objective_func(x_k) << "  alpha: " << alpha << std::endl; 
+        std::cout << "x_opt: " << x_k.transpose() << std::endl; 
+        iter++;
+    } 
+
+    return x_k;
 
 }
