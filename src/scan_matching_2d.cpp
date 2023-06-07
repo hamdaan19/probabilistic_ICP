@@ -62,7 +62,7 @@ int main(int argc, char* argv[]){
 
     // Predicted state
     Eigen::Vector3d x_pred; // True: 0.0, -0.0, -0.0
-    x_pred << -20.2, -13.3, 0.3681748; 
+    x_pred << -301.2, -230.3, 0.3681748; 
 
     // Point correspondences. Assuming known correspondences. 
     std::vector<std::vector<unsigned>> c = getCorrespondences(scan_1->size()); 

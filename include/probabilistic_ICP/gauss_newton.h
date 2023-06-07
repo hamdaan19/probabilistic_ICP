@@ -37,7 +37,7 @@ namespace optim {
             Eigen::VectorXd x_t1_; 
             Eigen::MatrixXd S_t1_; 
 
-            double objective_func(Eigen::VectorXd x); 
+            double objective_func(Eigen::VectorXd x, double alpha, Eigen::VectorXd step); 
 
             Eigen::VectorXd optimize(Eigen::Vector3d x_init, double step_length, bool log_data=true); 
     }; 

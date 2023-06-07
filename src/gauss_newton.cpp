@@ -23,11 +23,11 @@ optim::GaussNewton::GaussNewton(
 
 }
 
-double optim::GaussNewton::objective_func(Eigen::VectorXd x) {
+double optim::GaussNewton::objective_func(Eigen::VectorXd x, double alpha, Eigen::VectorXd step) {
 
     double corres_weight = 1/((double)z_arr.size()); 
 
-    auto measurement_part = [this, &x, corres_weight](double prev, std::vector<unsigned> c_i) { // &this->z_arr, &m_arr, S_t0, Q, x, x_t
+    auto measurement_part = [this, &x, corres_weight, alpha, step](double prev, std::vector<unsigned> c_i) { // &this->z_arr, &m_arr, S_t0, Q, x, x_t
         unsigned int scan1idx = c_i[0]; // index of the corresponding point in scan 1
         unsigned int scan2idx = c_i[1]; // index of the corresponding measurement in scan 2
 
@@ -38,7 +38,7 @@ double optim::GaussNewton::objective_func(Eigen::VectorXd x) {
         Eigen::MatrixXd S_z = H*S_t0*H.transpose() + Q;
         Eigen::VectorXd z_pred = observation_model(p_w_i, x);
 
-        double res = corres_weight * (z_i - z_pred).transpose() * S_z.inverse() * (z_i - z_pred); 
+        double res = (z_i - z_pred).transpose() * S_z.inverse() * (z_i - z_pred) + alpha*step.squaredNorm(); 
 
         return res+prev; 
     };
@@ -85,12 +85,12 @@ Eigen::VectorXd optim::GaussNewton::optimize(Eigen::Vector3d x_init, double step
     int iter = 0; 
 
     // Stopping Criterion
-    double eps = 1e-5; 
-    double prev_obj_val = objective_func(x_init);
+    double eps = 1e-4; 
     double alpha = 0.1; 
+    double prev_obj_val; // = objective_func(x_init, alpha, );
     Eigen::Matrix<double,3,1> x_prev; 
 
-    while (iter < 1000) { // some condition
+    while (iter < 300) { // some condition
 
         // Logging data into a csv file
         if (log_data) {
@@ -122,7 +122,12 @@ Eigen::VectorXd optim::GaussNewton::optimize(Eigen::Vector3d x_init, double step
         x_prev = x_k; 
         x_k = x_k + (step_length * del_x_resultant); // Updating x per iteration
         // std::cout << x_k.transpose() << std::endl; 
-        double obj_val = objective_func(x_k);
+        double obj_val = objective_func(x_k, alpha, del_x_resultant);
+        if (iter == 0){
+            prev_obj_val = obj_val;
+            iter += 1; 
+            continue;
+        }
 
         // Updating damping factor
         if (obj_val > prev_obj_val){
@@ -138,9 +143,9 @@ Eigen::VectorXd optim::GaussNewton::optimize(Eigen::Vector3d x_init, double step
 
         prev_obj_val = obj_val; // Updating previous objective function value
 
-        std::cout << "Iteration: " << iter << " Obj func: " << objective_func(x_k) << "  alpha: " << alpha << std::endl; 
+        std::cout << "Iteration: " << iter << " Obj func: " << obj_val << "  alpha: " << alpha << std::endl; 
         std::cout << "x_opt: " << x_k.transpose() << std::endl; 
-        iter++;
+        iter = iter + 1;
     } 
 
     if (log_data){
