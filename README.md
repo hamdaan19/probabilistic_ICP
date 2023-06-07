@@ -1,8 +1,9 @@
 ## A Probabilistic Approach to Iterative Closest Point Algorithm
 
 This repository contains code for an approach taken on the ICP algorithm from a probabilistic point of view. The sake of proof of concept and demostration, the method has been validated on a 2D point set. However, extending this to 3D scan-matching and coupling with a state-estimator such as a Kalman Filter is accurate localization via this approach is definitely in my futrue plans for this project.  
-
- <!-- <img src="data/probabilistic_icp.gif" width=400/> -->
+<p align="center">
+ <img src="data/probabilistic_icp.gif" width=600/>
+</p>
  ![Probabilistic Scan Matching GIF](data/probabilistic_icp.gif)
 
 ### Learn More About This
