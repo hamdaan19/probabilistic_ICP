@@ -2,7 +2,7 @@
 
 This repository contains code for an approach taken on the ICP algorithm from a probabilistic point of view. The sake of proof of concept and demostration, the method has been validated on a 2D point set. However, extending this to 3D scan-matching and coupling with a state-estimator such as a Kalman Filter is accurate localization via this approach is definitely in my futrue plans for this project.  
 <p align="center">
- <img src="data/probabilistic_icp.gif" width=600/>
+ <img src="data/probabilistic_icp.gif" width=400/>
 </p>
 
 ### Learn More About This
