@@ -15,19 +15,19 @@ Instaltion commands as per Ubuntu, Debian systems.
 
 #### Compiling the Code
 
-'''
+```
 git clone git@github.com:hamdaan19/probabilistic_ICP.git
 mkdir probabilistic_ICP/build && cd probabilistic_ICP/build
 cmake ..
 make
-'''
+```
 
 First prepare your data by running the src/transform_cloud.cpp . This file transforms room.pcd into a new cloud to emulate to different scans taken from two different POVs. 
 `cd build && ./transform`
 
 <b>Perform Scan Matching</b>
-'''
+```
 cd build && ./scan_matching_2d true|false #bool arg for logging optimizer data. Default: false 
-'''
+```
 
 
